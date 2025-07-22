@@ -43,28 +43,37 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith('/dashboard/')) {
     const token = request.cookies.get('token')?.value;
     
+    console.log('Dashboard access attempt:', { pathname, hasToken: !!token });
+    
     if (!token) {
+      console.log('No token found, redirecting to login');
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
 
     try {
       const payload = verifyToken(token);
+      console.log('Token verified successfully:', { userId: payload.userId, role: payload.role, pathname });
       
       // Role-based access control for dashboard routes
       if (pathname.startsWith('/dashboard/user') && payload.role !== 'user') {
+        console.log('User role mismatch, redirecting to login');
         return NextResponse.redirect(new URL('/auth/login', request.url));
       }
       
       if (pathname.startsWith('/dashboard/admin') && payload.role !== 'admin') {
+        console.log('Admin role mismatch, redirecting to login', { userRole: payload.role, requiredRole: 'admin' });
         return NextResponse.redirect(new URL('/auth/login', request.url));
       }
       
       if (pathname.startsWith('/dashboard/superadmin') && payload.role !== 'superadmin') {
+        console.log('Superadmin role mismatch, redirecting to login', { userRole: payload.role, requiredRole: 'superadmin' });
         return NextResponse.redirect(new URL('/auth/login', request.url));
       }
 
+      console.log('Access granted to dashboard');
       return NextResponse.next();
     } catch (error) {
+      console.log('Token verification failed:', error);
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
   }
